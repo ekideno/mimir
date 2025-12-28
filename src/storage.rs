@@ -1,6 +1,5 @@
 use crate::models::Subject;
-use std::fs;
-use std::path::Path;
+use std::{fs, path::Path};
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -39,4 +38,28 @@ pub fn get_all_subjects(path: &str) -> Result<Vec<Subject>> {
 pub fn find_subject(path: &str, name: &str) -> Result<Option<Subject>> {
     let subjects = load_subjects(path)?;
     Ok(subjects.into_iter().find(|s| s.name == name))
+}
+
+/// Новая функция: обновление существующего Subject
+pub fn update_subject(path: &str, updated: Subject) -> Result<()> {
+    let mut subjects = load_subjects(path)?;
+    let mut found = false;
+
+    for subject in &mut subjects {
+        if subject.name == updated.name {
+            // Обновляем все поля
+            subject.files = updated.files.clone();
+            subject.subject_dir = updated.subject_dir.clone();
+            // Если есть другие поля — обновляем здесь
+            found = true;
+            break;
+        }
+    }
+
+    if !found {
+        return Err(format!("Subject '{}' not found", updated.name).into());
+    }
+
+    save_subjects(path, &subjects)?;
+    Ok(())
 }

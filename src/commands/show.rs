@@ -10,7 +10,7 @@ pub fn execute(
         show_all_subjects(storage_path);
     } else if let Some(name) = subject_name {
         if show_files {
-            show_subject_files(name);
+            show_subject_files(name, storage_path);
         } else {
             show_subject_info(name, storage_path);
         }
@@ -59,7 +59,23 @@ fn show_subject_info(name: &str, storage_path: &str) {
     }
 }
 
-fn show_subject_files(name: &str) {
+fn show_subject_files(name: &str, storage_path: &str) {
     println!("Files for \"{}\"", name);
-    // TODO: Implement file listing
+    match storage::find_subject(storage_path, name) {
+        Ok(Some(subject)) => {
+            println!("Subject: {}", subject.name);
+            for file in subject.files {
+                println!("{}", file);
+            }
+            // TODO: Show more info (files, notes, etc.)
+        }
+        Ok(None) => {
+            eprintln!("Subject '{}' not found", name);
+            std::process::exit(1);
+        }
+        Err(e) => {
+            eprintln!("Error: {}", e);
+            std::process::exit(1);
+        }
+    }
 }
