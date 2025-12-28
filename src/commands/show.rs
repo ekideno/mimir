@@ -1,81 +1,45 @@
 use crate::storage;
+use clap::Args;
 
-pub fn execute(
-    show_subjects: bool,
-    show_files: bool,
-    subject_name: Option<&str>,
-    storage_path: &str,
-) {
-    if show_subjects {
-        show_all_subjects(storage_path);
-    } else if let Some(name) = subject_name {
-        if show_files {
-            show_subject_files(name, storage_path);
-        } else {
-            show_subject_info(name, storage_path);
-        }
-    } else if show_files && show_subjects {
-        println!("Files:");
-        // TODO: Implement files listing
-    } else {
-        eprintln!("Please specify what to show. Use --help for more information.");
-        std::process::exit(1);
-    }
+#[derive(Args)]
+pub struct ShowArgs {
+    /// Name of the subject to show, or "subjects" to list all subjects
+    pub name: Option<String>,
 }
-
-fn show_all_subjects(storage_path: &str) {
-    match storage::get_all_subjects(storage_path) {
-        Ok(subjects) => {
-            if subjects.is_empty() {
-                println!("No subjects found. Add one with: mimir add --subject <name>");
+pub fn handle(args: &ShowArgs) {
+    match &args.name {
+        None => {
+            if let Ok(subjects) = storage::get_all_subjects("./test_data.json") {
+                println!("Subjects and files:");
+                for subject in subjects {
+                    println!("- {}:", subject.name);
+                    for file in &subject.files {
+                        println!("    {}", file);
+                    }
+                }
             } else {
+                eprintln!("Failed to read subjects data");
+            }
+        }
+        Some(name) if name == "subjects" => {
+            if let Ok(subjects) = storage::get_all_subjects("./test_data.json") {
                 println!("Subjects:");
                 for subject in subjects {
-                    println!("  • {}", subject.name);
+                    println!("- {}", subject.name);
+                }
+            } else {
+                eprintln!("Failed to read subjects data");
+            }
+        }
+        Some(subject_name) => match storage::find_subject("./test_data.json", subject_name) {
+            Ok(Some(subject)) => {
+                println!("Files in '{}':", subject.name);
+                for file in &subject.files {
+                    println!("- {}", file);
                 }
             }
-        }
-        Err(e) => {
-            eprintln!("Error loading subjects: {}", e);
-            std::process::exit(1);
-        }
-    }
-}
-
-fn show_subject_info(name: &str, storage_path: &str) {
-    match storage::find_subject(storage_path, name) {
-        Ok(Some(subject)) => {
-            println!("Subject: {}", subject.name);
-            // TODO: Show more info (files, notes, etc.)
-        }
-        Ok(None) => {
-            eprintln!("Subject '{}' not found", name);
-            std::process::exit(1);
-        }
-        Err(e) => {
-            eprintln!("Error: {}", e);
-            std::process::exit(1);
-        }
-    }
-}
-
-fn show_subject_files(name: &str, storage_path: &str) {
-    println!("Files for \"{}\"", name);
-    match storage::find_subject(storage_path, name) {
-        Ok(Some(subject)) => {
-            println!("Subject: {}", subject.name);
-            for file in subject.files {
-                println!("{}", file);
-            }
-            // TODO: Show more info (files, notes, etc.)
-        }
-        Ok(None) => {
-            eprintln!("Subject '{}' not found", name);
-            std::process::exit(1);
-        }
-        Err(e) => {
-            eprintln!("Error: {}", e);
-            std::process::exit(1);
-        }
+            Ok(None) => eprintln!("Subject '{}' not found", subject_name),
+            Err(e) => eprintln!("Failed to read data: {}", e),
+        },
     }
 }

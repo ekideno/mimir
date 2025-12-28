@@ -3,57 +3,26 @@ use clap::{Parser, Subcommand};
 #[derive(Parser)]
 #[command(name = "mimir")]
 #[command(about = "Study Manager CLI")]
-#[command(version)]
+#[command(author, version, about, long_about = None)]
 pub struct Cli {
+    /// Optional positional argument for "open" shortcut
+    #[arg(value_name = "search_name", required = false)]
+    pub default_open: Option<String>,
+
     #[command(subcommand)]
-    pub command: Commands,
+    pub command: Option<Commands>,
 }
 
 #[derive(Subcommand)]
 pub enum Commands {
-    // TODO: rename flag --rename
-    // mimir file --add --delete <subject> <file_path>
-    /// Work with file for subject
-    File {
-        #[arg(short, long)]
-        add: bool,
-        #[arg(short, long)]
-        delete: bool,
+    #[command(subcommand)]
+    Subject(super::commands::subject::SubjectCommands),
 
-        subject_name: Option<String>,
-        file_path: Option<String>,
-    },
+    #[command(subcommand)]
+    File(super::commands::file::FileCommands),
 
-    // TODO: replace with mimir subject --add --delete --rename <subject_name>
-    /// Add a new subject
-    Add {
-        /// Name of the subject
-        #[arg(short, long)]
-        subject: Option<String>,
-        tasks_count: u32,
-
-        #[arg(short, long)]
-        file: bool,
-
-        subject_name: Option<String>,
-
-        file_path: Option<String>,
-    },
-    /// Show subjects or files
-    Show {
-        /// Show all subjects
-        #[arg(short, long)]
-        subjects: bool,
-        /// Show files
-        #[arg(short, long)]
-        files: bool,
-        /// Optional: name of a specific subject
-        subject_name: Option<String>,
-    },
-
-    Open {
-        subject_name: Option<String>,
-    },
+    Open(super::commands::open::OpenArgs),
+    Show(super::commands::show::ShowArgs),
 }
 
 // Commands

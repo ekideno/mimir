@@ -3,45 +3,31 @@ mod commands;
 mod models;
 mod storage;
 
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 use cli::{Cli, Commands};
+use commands::file;
+
+use crate::commands::{open, show, subject};
 
 fn main() {
     let cli = Cli::parse();
-    let storage_path = "test_data.json";
 
-    match &cli.command {
-        Commands::File {
-            add,
-            delete,
-            subject_name,
-            file_path,
-        } => commands::file::execute(*add, *delete, subject_name.as_deref(), file_path.as_deref()),
-        Commands::Add {
-            subject,
-            subject_name,
-            tasks_count,
-            file,
-            file_path,
-        } => {
-            commands::add::execute(
-                subject.as_deref(),
-                subject_name.as_deref(),
-                *tasks_count,
-                storage_path,
-                *file,
-                file_path.as_deref(),
-            );
-        }
-        Commands::Show {
-            subjects,
-            files,
-            subject_name,
-        } => {
-            commands::show::execute(*subjects, *files, subject_name.as_deref(), storage_path);
-        }
-        Commands::Open { subject_name } => {
-            commands::open::execute(subject_name.as_deref(), storage_path);
+    if cli.default_open.is_none() && cli.command.is_none() {
+        Cli::command().print_help().unwrap();
+        println!();
+        return;
+    }
+    if let Some(name) = cli.default_open {
+        open::handle(&open::OpenArgs { name });
+        return;
+    }
+
+    if let Some(command) = cli.command {
+        match command {
+            Commands::Open(args) => open::handle(&args),
+            Commands::Show(args) => show::handle(&args),
+            Commands::File(cmd) => file::handle(&cmd),
+            Commands::Subject(cmd) => subject::handle(&cmd),
         }
     }
 }
