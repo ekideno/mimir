@@ -7,7 +7,7 @@ use clap::{CommandFactory, Parser};
 use cli::{Cli, Commands};
 use commands::file;
 
-use crate::commands::{open, show, subject};
+use crate::commands::{complete, open, show, subject};
 
 fn main() {
     let cli = Cli::parse();
@@ -17,13 +17,14 @@ fn main() {
         println!();
         return;
     }
-    if let Some(name) = cli.default_open {
-        open::handle(&open::OpenArgs { name });
-        return;
-    }
+    // if let Some(name) = cli.default_open {
+    //     open::handle(&open::OpenArgs { name });
+    //     return;
+    // }
 
     if let Some(command) = cli.command {
         match command {
+            Commands::__Complete { scope, prefix } => complete::handle(&scope, &prefix),
             Commands::Open(args) => open::handle(&args),
             Commands::Show(args) => show::handle(&args),
             Commands::File(cmd) => file::handle(&cmd),

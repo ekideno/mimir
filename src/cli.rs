@@ -23,6 +23,12 @@ pub enum Commands {
 
     Open(super::commands::open::OpenArgs),
     Show(super::commands::show::ShowArgs),
+
+    #[command(hide = true)]
+    __Complete {
+        scope: String,
+        prefix: String,
+    },
 }
 
 // Commands

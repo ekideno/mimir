@@ -1,5 +1,5 @@
 use clap::Args;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[derive(Args)]
@@ -12,10 +12,10 @@ pub fn handle(args: &OpenArgs) {
     let path_file = Path::new(&args.name);
     let path_subject = Path::new("./subjects").join(&args.name);
 
-    let path_to_open = if path_file.exists() {
-        path_file
+    let path_to_open: PathBuf = if path_file.exists() {
+        path_file.to_path_buf()
     } else if path_subject.exists() {
-        path_subject.as_path()
+        path_subject
     } else {
         eprintln!("File or subject '{}' not found", args.name);
         return;
@@ -33,5 +33,5 @@ pub fn handle(args: &OpenArgs) {
     #[cfg(target_os = "linux")]
     Command::new("xdg-open").arg(path_to_open).status().unwrap();
 
-    println!("Opened '{}'", path_to_open.display());
+    // println!("Opened '{}'", path_to_open.display());
 }
