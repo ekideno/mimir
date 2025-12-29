@@ -42,7 +42,38 @@ pub fn add_file(subject_name: &str, file_path: &str) -> Result<(), String> {
         .map_err(|e| format!("Failed to update subject: {}", e))?;
 
     fs::copy(src, &dst).map_err(|e| format!("Failed to copy file to {:?}: {}", dst, e))?;
+    update_zsh_completion(); // ← ВАЖНО
 
     println!("Copied '{}' to {:?}", file_path, dst);
     Ok(())
+}
+
+use clap::CommandFactory;
+use clap_complete::{generate_to, shells::Zsh};
+use std::path::PathBuf;
+
+pub fn update_zsh_completion() {
+    let mut cmd = crate::cli::Cli::command();
+
+    let home = match std::env::var("HOME") {
+        Ok(h) => PathBuf::from(h),
+        Err(_) => {
+            eprintln!("HOME not set, cannot install zsh completion");
+            return;
+        }
+    };
+
+    let completion_dir = home.join(".zsh").join("completions");
+
+    if let Err(e) = std::fs::create_dir_all(&completion_dir) {
+        eprintln!("Failed to create zsh completion dir: {}", e);
+        return;
+    }
+
+    if let Err(e) = generate_to(Zsh, &mut cmd, "mimir", &completion_dir) {
+        eprintln!("Failed to generate zsh completion: {}", e);
+        return;
+    }
+
+    println!("✓ Zsh completion updated");
 }
