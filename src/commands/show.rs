@@ -1,3 +1,4 @@
+use crate::context::AppContext;
 use crate::storage;
 use clap::Args;
 
@@ -6,10 +7,10 @@ pub struct ShowArgs {
     /// Name of the subject to show, or "subjects" to list all subjects
     pub name: Option<String>,
 }
-pub fn handle(args: &ShowArgs) {
+pub fn handle(ctx: &AppContext, args: &ShowArgs) {
     match &args.name {
         None => {
-            if let Ok(subjects) = storage::get_all_subjects("./test_data.json") {
+            if let Ok(subjects) = storage::get_all_subjects(&ctx.config.data_path) {
                 println!("Subjects and files:");
                 for subject in subjects {
                     println!("- {}:", subject.name);
@@ -22,7 +23,7 @@ pub fn handle(args: &ShowArgs) {
             }
         }
         Some(name) if name == "subjects" => {
-            if let Ok(subjects) = storage::get_all_subjects("./test_data.json") {
+            if let Ok(subjects) = storage::get_all_subjects(&ctx.config.data_path) {
                 println!("Subjects:");
                 for subject in subjects {
                     println!("- {}", subject.name);
@@ -31,7 +32,7 @@ pub fn handle(args: &ShowArgs) {
                 eprintln!("Failed to read subjects data");
             }
         }
-        Some(subject_name) => match storage::find_subject("./test_data.json", subject_name) {
+        Some(subject_name) => match storage::find_subject(&ctx.config.data_path, subject_name) {
             Ok(Some(subject)) => {
                 println!("Files in '{}':", subject.name);
                 for file in &subject.files {

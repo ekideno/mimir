@@ -1,6 +1,9 @@
+use crate::context::AppContext;
+use anyhow::{Context, Result};
 use clap::Args;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
+use walkdir::WalkDir;
 
 #[derive(Args)]
 pub struct OpenArgs {
@@ -8,30 +11,62 @@ pub struct OpenArgs {
     pub name: String,
 }
 
-pub fn handle(args: &OpenArgs) {
-    let path_file = Path::new(&args.name);
-    let path_subject = Path::new("./subjects").join(&args.name);
+pub fn handle(ctx: &AppContext, args: &OpenArgs) {
+    let subjects_root = &ctx.config.subjects_path;
 
-    let path_to_open: PathBuf = if path_file.exists() {
-        path_file.to_path_buf()
-    } else if path_subject.exists() {
-        path_subject
-    } else {
-        eprintln!("File or subject '{}' not found", args.name);
+    let subject_dir = subjects_root.join(&args.name);
+    if subject_dir.is_dir() {
+        if let Err(e) = open_path(&subject_dir) {
+            eprintln!("Error opening '{}': {}", args.name, e);
+        }
         return;
-    };
+    }
 
+    if let Some(entry) = WalkDir::new(subjects_root)
+        .into_iter()
+        .filter_map(Result::ok)
+        .find(|e| {
+            e.file_type().is_file() && e.file_name().to_str().map_or(false, |s| s == args.name)
+        })
+    {
+        if let Err(e) = open_path(entry.path()) {
+            eprintln!("Error opening file '{}': {}", args.name, e);
+        }
+        return;
+    }
+
+    eprintln!("File or subject '{}' not found", args.name);
+}
+
+pub fn open_path(path: &Path) -> Result<()> {
     #[cfg(target_os = "windows")]
-    Command::new("cmd")
-        .args(["/C", "start", "", path_to_open.to_str().unwrap()])
-        .status()
-        .unwrap();
+    {
+        Command::new("cmd")
+            .args([
+                "/C",
+                "start",
+                "",
+                path.to_str().context("Invalid UTF-8 path")?,
+            ])
+            .status()
+            .context("Failed to execute 'start' command")?;
+    }
 
     #[cfg(target_os = "macos")]
-    Command::new("open").arg(path_to_open).status().unwrap();
+    {
+        Command::new("open")
+            .arg(path)
+            .status()
+            .context("Failed to execute 'open' command")?;
+    }
 
     #[cfg(target_os = "linux")]
-    Command::new("xdg-open").arg(path_to_open).status().unwrap();
+    {
+        Command::new("xdg-open")
+            .arg(path)
+            .status()
+            .context("Failed to execute 'xdg-open' command")?;
+    }
 
-    // println!("Opened '{}'", path_to_open.display());
+    Ok(())
 }
