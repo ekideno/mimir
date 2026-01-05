@@ -24,7 +24,6 @@ impl Config {
         let content = fs::read_to_string(&config_file)
             .with_context(|| format!("Failed to read config file: {:?}", config_file))?;
 
-        let mut data_path = None;
         let mut subjects_path = None;
 
         for line in content.lines() {
@@ -36,16 +35,13 @@ impl Config {
             let key = parts.next().unwrap().trim();
             let value = parts.next().unwrap_or("").trim();
             match key {
-                "data" => data_path = Some(value.to_string()),
                 "subjects" => subjects_path = Some(value.to_string()),
                 _ => {}
             }
         }
 
-        let data_path = data_path.context("Missing 'data_path' in config")?;
         let subjects_path = subjects_path.context("Missing 'subjects_path' in config")?;
 
-        let data_path = expand_tilde(&data_path)?;
         let subjects_path = expand_tilde(&subjects_path)?;
 
         if !subjects_path.exists() {
@@ -56,6 +52,8 @@ impl Config {
                 )
             })?;
         }
+
+        let data_path = subjects_path.join("data.json");
 
         Ok(Self::new(data_path, subjects_path))
     }
