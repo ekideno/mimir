@@ -1,14 +1,14 @@
+use crate::context::AppContext;
 use crate::storage;
 
-pub fn handle(scope: &str, prefix: &str) {
+pub fn handle(ctx: &AppContext, scope: &str, prefix: &str) {
     let mut results = Vec::new();
 
     if scope == "open" {
-        if let Ok(subjects) = storage::get_all_subjects("test_data.json") {
-            let prefix_lc = prefix.to_lowercase(); // приводим префикс к нижнему регистру
+        if let Ok(subjects) = storage::get_all_subjects(&ctx.config.data_path) {
+            let prefix_lc = prefix.to_lowercase();
 
             for subject in subjects {
-                // приводим имя subject к нижнему регистру для сравнения
                 if subject.name.to_lowercase().starts_with(&prefix_lc) {
                     results.push(subject.name.clone());
                 }

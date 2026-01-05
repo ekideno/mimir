@@ -3,7 +3,7 @@ use std::{fs, path::Path};
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-pub fn load_subjects(path: &str) -> Result<Vec<Subject>> {
+pub fn load_subjects(path: &Path) -> Result<Vec<Subject>> {
     if !Path::new(path).exists() {
         return Ok(Vec::new());
     }
@@ -13,13 +13,13 @@ pub fn load_subjects(path: &str) -> Result<Vec<Subject>> {
     Ok(subjects)
 }
 
-pub fn save_subjects(path: &str, subjects: &[Subject]) -> Result<()> {
+pub fn save_subjects(path: &Path, subjects: &[Subject]) -> Result<()> {
     let json = serde_json::to_string_pretty(subjects)?;
     fs::write(path, json)?;
     Ok(())
 }
 
-pub fn add_subject(path: &str, subject: Subject) -> Result<()> {
+pub fn add_subject(path: &Path, subject: Subject) -> Result<()> {
     let mut subjects = load_subjects(path)?;
 
     if subjects.iter().any(|s| s.name == subject.name) {
@@ -31,17 +31,17 @@ pub fn add_subject(path: &str, subject: Subject) -> Result<()> {
     Ok(())
 }
 
-pub fn get_all_subjects(path: &str) -> Result<Vec<Subject>> {
+pub fn get_all_subjects(path: &Path) -> Result<Vec<Subject>> {
     load_subjects(path)
 }
 
-pub fn find_subject(path: &str, name: &str) -> Result<Option<Subject>> {
+pub fn find_subject(path: &Path, name: &str) -> Result<Option<Subject>> {
     let subjects = load_subjects(path)?;
     Ok(subjects.into_iter().find(|s| s.name == name))
 }
 
 /// Новая функция: обновление существующего Subject
-pub fn update_subject(path: &str, updated: Subject) -> Result<()> {
+pub fn update_subject(path: &Path, updated: Subject) -> Result<()> {
     let mut subjects = load_subjects(path)?;
     let mut found = false;
 
