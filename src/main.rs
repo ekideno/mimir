@@ -17,7 +17,6 @@ fn main() -> anyhow::Result<()> {
 
     if cli.default_open.is_none() && cli.command.is_none() {
         Cli::command().print_help().unwrap();
-        println!();
         return Ok(());
     }
 

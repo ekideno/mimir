@@ -1,5 +1,4 @@
 use crate::context::AppContext;
-use crate::storage;
 use clap::Args;
 
 #[derive(Args)]
@@ -10,7 +9,7 @@ pub struct ShowArgs {
 pub fn handle(ctx: &AppContext, args: &ShowArgs) {
     match &args.name {
         None => {
-            if let Ok(subjects) = storage::get_all_subjects(&ctx.config.data_path) {
+            if let Ok(subjects) = ctx.storage.get_all_subjects_with_files() {
                 println!("Subjects and files:");
                 for subject in subjects {
                     println!("- {}:", subject.name);
@@ -23,7 +22,7 @@ pub fn handle(ctx: &AppContext, args: &ShowArgs) {
             }
         }
         Some(name) if name == "subjects" => {
-            if let Ok(subjects) = storage::get_all_subjects(&ctx.config.data_path) {
+            if let Ok(subjects) = ctx.storage.get_all_subjects() {
                 println!("Subjects:");
                 for subject in subjects {
                     println!("- {}", subject.name);
@@ -32,15 +31,13 @@ pub fn handle(ctx: &AppContext, args: &ShowArgs) {
                 eprintln!("Failed to read subjects data");
             }
         }
-        Some(subject_name) => match storage::find_subject(&ctx.config.data_path, subject_name) {
-            Ok(Some(subject)) => {
+        Some(subject_name) => {
+            if let Ok(subject) = ctx.storage.get_subject(subject_name) {
                 println!("Files in '{}':", subject.name);
                 for file in &subject.files {
                     println!("- {}", file);
                 }
             }
-            Ok(None) => eprintln!("Subject '{}' not found", subject_name),
-            Err(e) => eprintln!("Failed to read data: {}", e),
-        },
+        }
     }
 }

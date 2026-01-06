@@ -1,15 +1,23 @@
-use crate::config::Config;
+use crate::{
+    config::Config,
+    storage::{self, Storage},
+};
+use rusqlite::Connection;
 
-#[derive(Debug)]
 pub struct AppContext {
     pub config: Config,
-    // pub db: Connection,
+    pub storage: Storage,
 }
 
 impl AppContext {
     pub fn init() -> anyhow::Result<Self> {
         let config = Config::load()?;
-        // let db = Connection::open(&config.db_path)?;
-        Ok(Self { config })
+
+        let conn = Connection::open(&config.data_path)?;
+        storage::init_db(&conn)?;
+
+        let storage = Storage::new(conn);
+
+        Ok(Self { config, storage })
     }
 }

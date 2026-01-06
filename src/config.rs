@@ -53,7 +53,7 @@ impl Config {
             })?;
         }
 
-        let data_path = subjects_path.join("data.json");
+        let data_path = subjects_path.join("workspace.db");
 
         Ok(Self::new(data_path, subjects_path))
     }

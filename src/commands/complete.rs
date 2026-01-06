@@ -1,11 +1,10 @@
 use crate::context::AppContext;
-use crate::storage;
 
 pub fn handle(ctx: &AppContext, scope: &str, prefix: &str) {
     let mut results = Vec::new();
 
     if scope == "open" {
-        if let Ok(subjects) = storage::get_all_subjects(&ctx.config.data_path) {
+        if let Ok(subjects) = ctx.storage.get_all_subjects_with_files() {
             let prefix_lc = prefix.to_lowercase();
 
             for subject in subjects {

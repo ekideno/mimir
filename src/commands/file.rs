@@ -19,36 +19,30 @@ pub fn handle(ctx: &AppContext, cmd: &FileCommands) {
 }
 
 pub fn add_file(ctx: &AppContext, subject_name: &str, file_path: &str) -> Result<(), String> {
-    let mut subject: Subject = storage::find_subject(&ctx.config.data_path, subject_name)
-        .map_err(|e| format!("Failed to read subject: {}", e))?
-        .ok_or_else(|| format!("Subject '{}' not found", subject_name))?;
-
     let src = Path::new(file_path);
     if !src.exists() {
         return Err(format!("Source file '{}' does not exist", file_path));
     }
 
-    let dst = Path::new(&subject.subject_dir).join(
-        src.file_name()
-            .unwrap_or_else(|| std::ffi::OsStr::new("unknown")),
-    );
-
     let file_name = src
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_else(|| "unknown".to_string());
-    subject.files.push(file_name.clone());
 
-    storage::update_subject(&ctx.config.data_path, subject)
-        .map_err(|e| format!("Failed to update subject: {}", e))?;
-
+    let dst = Path::new(&ctx.config.subjects_path)
+        .join(subject_name)
+        .join(
+            src.file_name()
+                .unwrap_or_else(|| std::ffi::OsStr::new("unknown")),
+        );
     fs::copy(src, &dst).map_err(|e| format!("Failed to copy file to {:?}: {}", dst, e))?;
+
+    ctx.storage.add_file(subject_name, &file_name);
+
     update_zsh_completion();
 
-    println!("Copied '{}' to {:?}", file_path, dst);
     Ok(())
 }
-
 use clap::CommandFactory;
 use clap_complete::{generate_to, shells::Zsh};
 use std::path::PathBuf;

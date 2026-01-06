@@ -1,6 +1,5 @@
 use crate::context::AppContext;
 use crate::models::Subject;
-use crate::storage;
 use ::std::path::Path;
 use anyhow::{Result, anyhow};
 use clap::Subcommand;
@@ -34,14 +33,9 @@ fn add_subject(ctx: &AppContext, subject_name: &str, tasks_count: u32) -> Result
             .map_err(|e| anyhow!("Failed to create subject directory: {}", e))?;
     }
 
-    let subject = Subject::new(
-        subject_name.to_string(),
-        tasks_count,
-        subject_dir.to_string_lossy().to_string(),
-    );
+    let subject = Subject::new(subject_name.to_string(), tasks_count);
 
-    storage::add_subject(&ctx.config.data_path, subject)
-        .map_err(|e| anyhow!("Failed to add subject to storage: {}", e))?;
+    ctx.storage.add_subject_names(subject);
 
     println!("✓ Subject '{}' added successfully!", subject_name);
     Ok(())
