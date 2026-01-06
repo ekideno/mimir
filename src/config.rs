@@ -35,12 +35,12 @@ impl Config {
             let key = parts.next().unwrap().trim();
             let value = parts.next().unwrap_or("").trim();
             match key {
-                "subjects" => subjects_path = Some(value.to_string()),
+                "workspace" => subjects_path = Some(value.to_string()),
                 _ => {}
             }
         }
 
-        let subjects_path = subjects_path.context("Missing 'subjects_path' in config")?;
+        let subjects_path = subjects_path.context("Missing 'workspace' in config")?;
 
         let subjects_path = expand_tilde(&subjects_path)?;
 
