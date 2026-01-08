@@ -22,6 +22,14 @@ pub fn init_db(conn: &Connection) -> anyhow::Result<()> {
             name TEXT NOT NULL,
             FOREIGN KEY(subject_id) REFERENCES subjects(id) ON DELETE CASCADE
         );
+
+        CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            subject_id INTEGER NOT NULL,
+            title TEXT NOT NULL,
+            done INTEGER NOT NULL DEFAULT 0,
+            FOREIGN KEY(subject_id) REFERENCES subjects(id) ON DELETE CASCADE
+        );
     "#,
     )
     .context("Failed to create tables")?;
@@ -37,10 +45,7 @@ impl Storage {
     pub fn new(conn: Connection) -> Self {
         Self { conn }
     }
-    pub fn test_connection(&self) -> rusqlite::Result<()> {
-        let _: i32 = self.conn.query_row("SELECT 1", [], |row| row.get(0))?;
-        Ok(())
-    }
+
     pub fn add_file(&self, subject_name: &str, file_name: &str) -> anyhow::Result<()> {
         let subject_id: i64 = self
             .conn
@@ -61,12 +66,35 @@ impl Storage {
         println!("✓ File '{}' added to subject '{}'", file_name, subject_name);
         Ok(())
     }
+    pub fn add_task(&self, subject_name: &str, task_title: &str) -> anyhow::Result<()> {
+        let subject_id: i64 = self
+            .conn
+            .query_row(
+                "SELECT id FROM subjects WHERE name = ?1",
+                [subject_name],
+                |row| row.get(0),
+            )
+            .context("Subject not found")?;
+
+        self.conn
+            .execute(
+                "INSERT INTO tasks (subject_id, title) VALUES (?1, ?2)",
+                rusqlite::params![subject_id, task_title],
+            )
+            .context("Failed to insert file")?;
+
+        println!(
+            "✓ Task '{}' added to subject '{}'",
+            task_title, subject_name
+        );
+        Ok(())
+    }
 
     pub fn add_subject_names(&self, subject: Subject) -> Option<Subject> {
-        match self.conn.execute(
-            "INSERT INTO subjects (name, task_count) VALUES (?1, ?2)",
-            [&subject.name, &subject.task_count.to_string()],
-        ) {
+        match self
+            .conn
+            .execute("INSERT INTO subjects (name) VALUES (?1)", [&subject.name])
+        {
             Ok(_) => Some(subject),
             Err(e) => {
                 eprintln!("Ошибка при добавлении: {}", e);
@@ -80,17 +108,13 @@ impl Storage {
             .conn
             .prepare("SELECT id, name, task_count FROM subjects")?;
         let subjects_iter = subjects_stmt.query_map([], |row| {
-            Ok((
-                row.get::<_, i64>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, u32>(2)?,
-            ))
+            Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
         })?;
 
         let mut result = Vec::new();
 
         for subj in subjects_iter {
-            let (id, name, task_count) = subj?;
+            let (id, name) = subj?;
 
             let mut files_stmt = self
                 .conn
@@ -103,22 +127,18 @@ impl Storage {
                 files.push(file_name);
             }
 
-            result.push(Subject {
-                name,
-                task_count,
-                files,
-            });
+            result.push(Subject { name, files });
         }
 
         Ok(result)
     }
     pub fn get_subject(&self, subject_name: &str) -> Result<Subject> {
-        let (id, task_count): (i64, u32) = self
+        let id: i64 = self
             .conn
             .query_row(
-                "SELECT id, task_count FROM subjects WHERE name = ?1",
+                "SELECT id FROM subjects WHERE name = ?1",
                 [subject_name],
-                |row| Ok((row.get(0)?, row.get(1)?)),
+                |row| Ok(row.get(0)?),
             )
             .context(format!("Subject '{}' not found", subject_name))?;
 
@@ -134,13 +154,12 @@ impl Storage {
 
         Ok(Subject {
             name: subject_name.to_string(),
-            task_count,
             files,
         })
     }
     pub fn get_all_subjects(&self) -> Result<Vec<Subject>> {
-        let mut stmt = self.conn.prepare("SELECT name, task_count FROM subjects")?;
-        let rows = stmt.query_map([], |row| Ok(Subject::new(row.get(0)?, row.get(1)?)))?;
+        let mut stmt = self.conn.prepare("SELECT name FROM subjects")?;
+        let rows = stmt.query_map([], |row| Ok(Subject::new(row.get(0)?)))?;
 
         let mut subjects = Vec::new();
         for subj in rows {

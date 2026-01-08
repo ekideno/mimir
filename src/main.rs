@@ -10,7 +10,7 @@ use cli::{Cli, Commands};
 use commands::file;
 use context::AppContext;
 
-use crate::commands::{complete, open, show, subject};
+use crate::commands::{complete, open, show, subject, task};
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
@@ -33,6 +33,7 @@ fn main() -> anyhow::Result<()> {
             Commands::Show(args) => show::handle(&ctx, &args),
             Commands::File(cmd) => file::handle(&ctx, &cmd),
             Commands::Subject(cmd) => subject::handle(&ctx, &cmd),
+            Commands::Task(cmd) => task::handle(&ctx, &cmd),
         }
     }
 

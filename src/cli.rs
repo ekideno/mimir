@@ -21,6 +21,9 @@ pub enum Commands {
     #[command(subcommand)]
     File(super::commands::file::FileCommands),
 
+    #[command(subcommand)]
+    Task(super::commands::task::TaskCommands),
+
     Open(super::commands::open::OpenArgs),
     Show(super::commands::show::ShowArgs),
 
