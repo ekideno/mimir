@@ -1,7 +1,7 @@
 use crate::context::AppContext;
 use crate::models::Subject;
 use ::std::path::Path;
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result};
 use clap::Subcommand;
 use std::fs;
 
@@ -10,29 +10,25 @@ pub enum SubjectCommands {
     Add { subject: String },
 }
 
-pub fn handle(ctx: &AppContext, cmd: &SubjectCommands) {
-    if let Err(e) = match cmd {
-        SubjectCommands::Add { subject } => add_subject(ctx, subject),
-    } {
-        eprintln!("Error: {}", e);
+pub fn handle(ctx: &AppContext, cmd: &SubjectCommands) -> Result<()> {
+    match cmd {
+        SubjectCommands::Add { subject } => add_subject(ctx, subject)?,
     }
+    Ok(())
 }
 
 fn add_subject(ctx: &AppContext, subject_name: &str) -> Result<()> {
     println!("Adding subject: {}", subject_name);
 
-    // Папка предмета внутри существующей папки subjects_path
     let subject_dir = Path::new(&ctx.config.subjects_path).join(subject_name);
 
-    // Создаём только если нет
     if !subject_dir.exists() {
-        fs::create_dir(&subject_dir)
-            .map_err(|e| anyhow!("Failed to create subject directory: {}", e))?;
+        fs::create_dir(&subject_dir).context("Failed to create subject directory")?;
     }
 
     let subject = Subject::new(subject_name.to_string());
 
-    ctx.storage.add_subject_names(subject);
+    ctx.storage.add_subject(subject)?;
 
     println!("✓ Subject '{}' added successfully!", subject_name);
     Ok(())

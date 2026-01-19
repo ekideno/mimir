@@ -1,5 +1,5 @@
 use crate::context::AppContext;
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use clap::Args;
 use std::path::Path;
 use std::process::Command;
@@ -11,15 +11,12 @@ pub struct OpenArgs {
     pub name: String,
 }
 
-pub fn handle(ctx: &AppContext, args: &OpenArgs) {
+pub fn handle(ctx: &AppContext, args: &OpenArgs) -> Result<()> {
     let subjects_root = &ctx.config.subjects_path;
 
     let subject_dir = subjects_root.join(&args.name);
     if subject_dir.is_dir() {
-        if let Err(e) = open_path(&subject_dir) {
-            eprintln!("Error opening '{}': {}", args.name, e);
-        }
-        return;
+        open_path(&subject_dir)?;
     }
 
     if let Some(entry) = WalkDir::new(subjects_root)
@@ -29,13 +26,10 @@ pub fn handle(ctx: &AppContext, args: &OpenArgs) {
             e.file_type().is_file() && e.file_name().to_str().map_or(false, |s| s == args.name)
         })
     {
-        if let Err(e) = open_path(entry.path()) {
-            eprintln!("Error opening file '{}': {}", args.name, e);
-        }
-        return;
+        open_path(entry.path())?;
     }
 
-    eprintln!("File or subject '{}' not found", args.name);
+    Err(anyhow!("File or subject '{}' not found", args.name))
 }
 
 pub fn open_path(path: &Path) -> Result<()> {

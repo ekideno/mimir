@@ -1,11 +1,12 @@
+use crate::errors::StorageError;
 use crate::models::Subject;
-use anyhow::{Context, Result};
-use rusqlite::Connection;
+use anyhow::{Context, Error, Result};
+use rusqlite::{Connection, params};
 
 pub struct Storage {
     conn: Connection,
 }
-pub fn init_db(conn: &Connection) -> anyhow::Result<()> {
+pub fn init_db(conn: &Connection) -> Result<()> {
     conn.execute_batch("PRAGMA foreign_keys = ON;")?;
 
     conn.execute_batch(
@@ -38,15 +39,10 @@ pub fn init_db(conn: &Connection) -> anyhow::Result<()> {
 }
 
 impl Storage {
-    // pub fn find_subject(&self, name: &str) -> Option<Subject> {
-    //     // SQL
-    // }
-    //
     pub fn new(conn: Connection) -> Self {
         Self { conn }
     }
-
-    pub fn add_file(&self, subject_name: &str, file_name: &str) -> anyhow::Result<()> {
+    pub fn add_file(&self, subject_name: &str, file_name: &str) -> Result<(), StorageError> {
         let subject_id: i64 = self
             .conn
             .query_row(
@@ -54,19 +50,24 @@ impl Storage {
                 [subject_name],
                 |row| row.get(0),
             )
-            .context("Subject not found")?;
+            .map_err(|e| match e {
+                rusqlite::Error::QueryReturnedNoRows => {
+                    StorageError::SubjectNotFound(subject_name.to_string())
+                }
+                other => StorageError::DbError(other),
+            })?;
 
         self.conn
             .execute(
                 "INSERT INTO files (subject_id, name) VALUES (?1, ?2)",
-                rusqlite::params![subject_id, file_name],
+                params![subject_id, file_name],
             )
-            .context("Failed to insert file")?;
+            .map_err(|_| StorageError::FileInsertError(file_name.to_string()))?;
 
-        println!("✓ File '{}' added to subject '{}'", file_name, subject_name);
         Ok(())
     }
-    pub fn add_task(&self, subject_name: &str, task_title: &str) -> anyhow::Result<()> {
+
+    pub fn add_task(&self, subject_name: &str, task_title: &str) -> Result<(), StorageError> {
         let subject_id: i64 = self
             .conn
             .query_row(
@@ -74,56 +75,57 @@ impl Storage {
                 [subject_name],
                 |row| row.get(0),
             )
-            .context("Subject not found")?;
+            .map_err(|e| match e {
+                rusqlite::Error::QueryReturnedNoRows => {
+                    StorageError::SubjectNotFound(subject_name.to_string())
+                }
+                other => StorageError::DbError(other),
+            })?;
 
         self.conn
             .execute(
                 "INSERT INTO tasks (subject_id, title) VALUES (?1, ?2)",
-                rusqlite::params![subject_id, task_title],
+                params![subject_id, task_title],
             )
-            .context("Failed to insert file")?;
+            .map_err(|_| StorageError::TaskInsertError(task_title.to_string()))?;
 
-        println!(
-            "✓ Task '{}' added to subject '{}'",
-            task_title, subject_name
-        );
         Ok(())
     }
 
-    pub fn add_subject_names(&self, subject: Subject) -> Option<Subject> {
-        match self
-            .conn
-            .execute("INSERT INTO subjects (name) VALUES (?1)", [&subject.name])
-        {
-            Ok(_) => Some(subject),
-            Err(e) => {
-                eprintln!("Ошибка при добавлении: {}", e);
-                None
-            }
-        }
+    pub fn add_subject(&self, subject: Subject) -> Result<Subject, Error> {
+        self.conn
+            .execute("INSERT INTO subjects (name) VALUES (?1)", [&subject.name])?;
+        Ok(subject)
     }
-
-    pub fn get_all_subjects_with_files(&self) -> anyhow::Result<Vec<Subject>> {
+    pub fn get_all_subjects_with_files(&self) -> Result<Vec<Subject>, StorageError> {
         let mut subjects_stmt = self
             .conn
-            .prepare("SELECT id, name, task_count FROM subjects")?;
-        let subjects_iter = subjects_stmt.query_map([], |row| {
-            Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
-        })?;
+            .prepare("SELECT id, name FROM subjects")
+            .map_err(|_| StorageError::SubjectsPrepareError)?;
+
+        let subjects_iter = subjects_stmt
+            .query_map([], |row| {
+                Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+            })
+            .map_err(|_| StorageError::SubjectsQueryError)?;
 
         let mut result = Vec::new();
 
         for subj in subjects_iter {
-            let (id, name) = subj?;
+            let (id, name) = subj.map_err(|_| StorageError::SubjectRowError)?;
 
             let mut files_stmt = self
                 .conn
-                .prepare("SELECT name FROM files WHERE subject_id = ?1")?;
-            let files_iter = files_stmt.query_map([id], |row| row.get::<_, String>(0))?;
+                .prepare("SELECT name FROM files WHERE subject_id = ?1")
+                .map_err(|_| StorageError::FilesPrepareError(name.clone()))?;
+
+            let files_iter = files_stmt
+                .query_map([id], |row| row.get::<_, String>(0))
+                .map_err(|_| StorageError::FilesQueryError(name.clone()))?;
 
             let mut files = Vec::new();
             for f in files_iter {
-                let file_name: String = f.context("Failed to get file name")?;
+                let file_name: String = f.map_err(|_| StorageError::FileNameError)?;
                 files.push(file_name);
             }
 
@@ -132,6 +134,7 @@ impl Storage {
 
         Ok(result)
     }
+
     pub fn get_subject(&self, subject_name: &str) -> Result<Subject> {
         let id: i64 = self
             .conn
@@ -157,7 +160,7 @@ impl Storage {
             files,
         })
     }
-    pub fn get_all_subjects(&self) -> Result<Vec<Subject>> {
+    pub fn get_all_subjects(&self) -> Result<Vec<Subject>, Error> {
         let mut stmt = self.conn.prepare("SELECT name FROM subjects")?;
         let rows = stmt.query_map([], |row| Ok(Subject::new(row.get(0)?)))?;
 

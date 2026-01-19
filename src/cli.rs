@@ -33,12 +33,3 @@ pub enum Commands {
         prefix: String,
     },
 }
-
-// Commands
-// mimir file --add --delete <subject> <file_path>
-// mimir subject --add --delete --rename <subject_name>
-// mimir show <subject_name>
-// mimir show <file_name>
-//
-// mimir open <subject_name> or mimir <subject_name>
-// mimir open <file_name> or mimir <file_name>

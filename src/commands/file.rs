@@ -1,4 +1,5 @@
 use crate::context::AppContext;
+use anyhow::{Context, Result, anyhow};
 use clap::Subcommand;
 use std::fs;
 use std::path::Path;
@@ -8,18 +9,17 @@ pub enum FileCommands {
     Add { subject: String, path: String },
 }
 
-pub fn handle(ctx: &AppContext, cmd: &FileCommands) {
-    if let Err(e) = match cmd {
-        FileCommands::Add { subject, path } => add_file(&ctx, subject, path),
-    } {
-        eprintln!("Error: {}", e);
+pub fn handle(ctx: &AppContext, cmd: &FileCommands) -> Result<()> {
+    match cmd {
+        FileCommands::Add { subject, path } => add_file(&ctx, subject, path)?,
     }
+    Ok(())
 }
 
-pub fn add_file(ctx: &AppContext, subject_name: &str, file_path: &str) -> Result<(), String> {
+pub fn add_file(ctx: &AppContext, subject_name: &str, file_path: &str) -> Result<()> {
     let src = Path::new(file_path);
     if !src.exists() {
-        return Err(format!("Source file '{}' does not exist", file_path));
+        return Err(anyhow!("Source file '{}' does not exist", file_path));
     }
 
     let file_name = src
@@ -33,9 +33,9 @@ pub fn add_file(ctx: &AppContext, subject_name: &str, file_path: &str) -> Result
             src.file_name()
                 .unwrap_or_else(|| std::ffi::OsStr::new("unknown")),
         );
-    fs::copy(src, &dst).map_err(|e| format!("Failed to copy file to {:?}: {}", dst, e))?;
 
-    ctx.storage.add_file(subject_name, &file_name);
+    ctx.storage.add_file(subject_name, &file_name)?;
+    fs::copy(src, &dst).with_context(|| format!("failed to copy file to {:?}", dst))?;
 
     update_zsh_completion();
 
