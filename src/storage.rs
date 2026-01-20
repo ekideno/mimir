@@ -13,8 +13,7 @@ pub fn init_db(conn: &Connection) -> Result<()> {
         r#"
         CREATE TABLE IF NOT EXISTS subjects (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE,
-            task_count INTEGER NOT NULL
+            name TEXT NOT NULL UNIQUE
         );
 
         CREATE TABLE IF NOT EXISTS files (
@@ -87,16 +86,59 @@ impl Storage {
                 "INSERT INTO tasks (subject_id, title) VALUES (?1, ?2)",
                 params![subject_id, task_title],
             )
-            .map_err(|_| StorageError::TaskInsertError(task_title.to_string()))?;
+            .map_err(|e| StorageError::TaskInsertErrorWithDb(task_title.to_string(), e))?;
 
         Ok(())
     }
 
-    pub fn add_subject(&self, subject: Subject) -> Result<Subject, Error> {
-        self.conn
-            .execute("INSERT INTO subjects (name) VALUES (?1)", [&subject.name])?;
-        Ok(subject)
+    pub fn add_subject(&self, name: &str) -> Result<(), StorageError> {
+        match self
+            .conn
+            .execute("INSERT INTO subjects (name) VALUES (?1)", [name])
+        {
+            Ok(_) => Ok(()),
+            Err(rusqlite::Error::SqliteFailure(err, _))
+                if err.code == rusqlite::ffi::ErrorCode::ConstraintViolation =>
+            {
+                Err(StorageError::SubjectAlreadyExists(name.to_string()))
+            }
+            Err(e) => Err(StorageError::DbError(e)),
+        }
     }
+    pub fn delete_subject(&self, subject_name: &str) -> Result<(), StorageError> {
+        let affected = self
+            .conn
+            .execute("DELETE FROM subjects WHERE name = ?1", [subject_name])
+            .map_err(StorageError::DbError)?;
+        if affected == 0 {
+            return Err(StorageError::SubjectNotFound(subject_name.to_string()));
+        }
+
+        Ok(())
+    }
+
+    pub fn rename_subject(
+        &self,
+        subject_name: &str,
+        new_subject_name: &str,
+    ) -> Result<(), StorageError> {
+        match self.conn.execute(
+            "UPDATE subjects SET name = ?1 WHERE name = ?2",
+            params![new_subject_name, subject_name],
+        ) {
+            Ok(0) => Err(StorageError::SubjectNotFound(subject_name.to_string())),
+            Ok(_) => Ok(()),
+            Err(rusqlite::Error::SqliteFailure(err, _))
+                if err.code == rusqlite::ffi::ErrorCode::ConstraintViolation =>
+            {
+                Err(StorageError::SubjectAlreadyExists(
+                    new_subject_name.to_string(),
+                ))
+            }
+            Err(e) => Err(StorageError::DbError(e)),
+        }
+    }
+
     pub fn get_all_subjects_with_files(&self) -> Result<Vec<Subject>, StorageError> {
         let mut subjects_stmt = self
             .conn

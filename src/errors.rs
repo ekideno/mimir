@@ -1,3 +1,4 @@
+use rusqlite::Error as RusqliteError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -5,11 +6,14 @@ pub enum StorageError {
     #[error("failed to insert file `{0}` into database")]
     FileInsertError(String),
 
-    #[error("failed to insert task `{0}` into database")]
-    TaskInsertError(String),
+    #[error("failed to insert task '{0}'")]
+    TaskInsertErrorWithDb(String, #[source] RusqliteError),
 
     #[error("subject `{0}` not found in workspace")]
     SubjectNotFound(String),
+
+    #[error("subject `{0}` already exists in workspace")]
+    SubjectAlreadyExists(String),
 
     #[error("database error")]
     DbError(#[from] rusqlite::Error),
