@@ -178,6 +178,22 @@ impl Storage {
         }
     }
 
+    pub fn get_subject_id_by_name_ci(&self, subject_name: &str) -> Result<i64, StorageError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id FROM subjects WHERE LOWER(name) = LOWER(?1)")
+            .map_err(StorageError::DbError)?;
+
+        let mut rows = stmt.query([subject_name]).map_err(StorageError::DbError)?;
+
+        if let Some(row) = rows.next().map_err(StorageError::DbError)? {
+            let id: i64 = row.get(0).map_err(StorageError::DbError)?;
+            Ok(id)
+        } else {
+            Err(StorageError::SubjectNotFound(subject_name.to_string()))
+        }
+    }
+
     pub fn get_subject_name_by_id(&self, id: i64) -> Result<String, StorageError> {
         let mut stmt = self
             .conn

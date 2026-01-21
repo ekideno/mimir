@@ -31,7 +31,7 @@ fn run() -> anyhow::Result<()> {
     let ctx = AppContext::init()?;
 
     if let Some(name) = cli.default_open {
-        open::handle(&ctx, &open::OpenArgs { name })?;
+        open::handle(&ctx, &open::OpenArgs { target: name })?;
         return Ok(());
     }
     if let Some(command) = cli.command {

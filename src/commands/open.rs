@@ -1,35 +1,53 @@
 use crate::context::AppContext;
 use anyhow::{Context, Result, anyhow};
 use clap::Args;
+use colored::*;
 use std::path::Path;
 use std::process::Command;
-use walkdir::WalkDir;
 
 #[derive(Args)]
 pub struct OpenArgs {
     /// Name of the file or subject to open
-    pub name: String,
+    pub target: String,
 }
 
 pub fn handle(ctx: &AppContext, args: &OpenArgs) -> Result<()> {
     let subjects_root = &ctx.config.subjects_path;
 
-    let subject_dir = subjects_root.join(&args.name);
-    if subject_dir.is_dir() {
-        open_path(&subject_dir)?;
+    if let Ok(subject_id) = ctx.storage.get_subject_id_by_filename(&args.target) {
+        let subject_name = ctx.storage.get_subject_name_by_id(subject_id)?;
+        let file_path = subjects_root.join(&subject_name).join(&args.target);
+
+        if !file_path.is_file() {
+            return Err(anyhow!("File {:?} not found on disk", file_path));
+        }
+
+        println!("{} file: {}", "opening".green().bold(), file_path.display());
+        open_path(&file_path)?;
+        return Ok(());
     }
 
-    if let Some(entry) = WalkDir::new(subjects_root)
-        .into_iter()
-        .filter_map(Result::ok)
-        .find(|e| {
-            e.file_type().is_file() && e.file_name().to_str().map_or(false, |s| s == args.name)
-        })
-    {
-        open_path(entry.path())?;
+    if let Ok(subject_id) = ctx.storage.get_subject_id_by_name_ci(&args.target) {
+        let subject_name = ctx.storage.get_subject_name_by_id(subject_id)?;
+        let subject_path = subjects_root.join(&subject_name);
+
+        if !subject_path.is_dir() {
+            return Err(anyhow!(
+                "Subject folder {:?} not found on disk",
+                subject_path
+            ));
+        }
+
+        println!(
+            "{} subject folder: {}",
+            "opening".green().bold(),
+            subject_path.display()
+        );
+        open_path(&subject_path)?;
+        return Ok(());
     }
 
-    Err(anyhow!("File or subject '{}' not found", args.name))
+    Err(anyhow!("File or subject '{}' not found", args.target))
 }
 
 pub fn open_path(path: &Path) -> Result<()> {
