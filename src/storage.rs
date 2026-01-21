@@ -61,7 +61,7 @@ impl Storage {
                 "INSERT INTO files (subject_id, name) VALUES (?1, ?2)",
                 params![subject_id, file_name],
             )
-            .map_err(|_| StorageError::FileInsertError(file_name.to_string()))?;
+            .map_err(|e| StorageError::FileInsertError(file_name.to_string(), e))?;
 
         Ok(())
     }
@@ -114,6 +114,113 @@ impl Storage {
             return Err(StorageError::SubjectNotFound(subject_name.to_string()));
         }
 
+        Ok(())
+    }
+    pub fn delete_task(&self, subject_id: i64, task_title: &str) -> Result<(), StorageError> {
+        let affected = self.conn.execute(
+            "DELETE FROM tasks WHERE subject_id = ?1 AND title = ?2",
+            params![subject_id, task_title],
+        )?;
+
+        if affected == 0 {
+            return Err(StorageError::TaskNotFound(task_title.to_string()));
+        }
+
+        Ok(())
+    }
+    pub fn get_subject_id_by_name(&self, subject_name: &str) -> Result<i64, StorageError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT id FROM subjects WHERE name = ?1")
+            .map_err(StorageError::DbError)?;
+
+        let mut rows = stmt.query([subject_name]).map_err(StorageError::DbError)?;
+
+        if let Some(row) = rows.next().map_err(StorageError::DbError)? {
+            let id: i64 = row.get(0).map_err(StorageError::DbError)?;
+            Ok(id)
+        } else {
+            Err(StorageError::SubjectNotFound(subject_name.to_string()))
+        }
+    }
+
+    pub fn rename_task(
+        &self,
+        subject_id: i64,
+        old_task_title: &str,
+        new_task_title: &str,
+    ) -> Result<(), StorageError> {
+        let affected = self.conn.execute(
+            "UPDATE tasks SET title = ?1 WHERE subject_id = ?2 AND title = ?3",
+            params![new_task_title, subject_id, old_task_title],
+        )?;
+
+        if affected == 0 {
+            return Err(StorageError::TaskNotFound(old_task_title.to_string()));
+        }
+
+        Ok(())
+    }
+
+    pub fn get_subject_id_by_filename(&self, file_name: &str) -> Result<i64, StorageError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT subject_id FROM files WHERE name = ?1")
+            .map_err(StorageError::DbError)?;
+
+        let mut rows = stmt.query([file_name]).map_err(StorageError::DbError)?;
+
+        if let Some(row) = rows.next().map_err(StorageError::DbError)? {
+            let id: i64 = row.get(0).map_err(StorageError::DbError)?;
+            Ok(id)
+        } else {
+            Err(StorageError::FileNotFound(file_name.to_string()))
+        }
+    }
+
+    pub fn get_subject_name_by_id(&self, id: i64) -> Result<String, StorageError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT name FROM subjects WHERE id = ?1")
+            .map_err(StorageError::DbError)?;
+
+        let mut rows = stmt.query([id]).map_err(StorageError::DbError)?;
+
+        if let Some(row) = rows.next().map_err(StorageError::DbError)? {
+            let name: String = row.get(0).map_err(StorageError::DbError)?;
+            Ok(name)
+        } else {
+            Err(StorageError::SubjectNotFound(id.to_string()))
+        }
+    }
+    pub fn rename_file(
+        &self,
+        old_file_name: &str,
+        new_file_name: &str,
+    ) -> Result<(), StorageError> {
+        let affected = self
+            .conn
+            .execute(
+                "UPDATE files SET name = ?1 WHERE name = ?2",
+                [new_file_name, old_file_name],
+            )
+            .map_err(StorageError::DbError)?;
+
+        if affected == 0 {
+            return Err(StorageError::FileNotFound(old_file_name.to_string()));
+        }
+
+        Ok(())
+    }
+
+    pub fn delete_file(&self, file_name: &str) -> Result<(), StorageError> {
+        let affected = self
+            .conn
+            .execute("DELETE FROM files WHERE name = ?1", [file_name])
+            .map_err(StorageError::DbError)?;
+        if affected == 0 {
+            return Err(StorageError::FileNotFound(file_name.to_string()));
+        }
         Ok(())
     }
 

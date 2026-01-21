@@ -4,13 +4,19 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum StorageError {
     #[error("failed to insert file `{0}` into database")]
-    FileInsertError(String),
+    FileInsertError(String, #[source] RusqliteError),
 
     #[error("failed to insert task '{0}'")]
     TaskInsertErrorWithDb(String, #[source] RusqliteError),
 
     #[error("subject `{0}` not found in workspace")]
     SubjectNotFound(String),
+
+    #[error("file `{0}` not found in workspace")]
+    FileNotFound(String),
+
+    #[error("task `{0}` not found")]
+    TaskNotFound(String),
 
     #[error("subject `{0}` already exists in workspace")]
     SubjectAlreadyExists(String),
