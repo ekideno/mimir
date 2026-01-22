@@ -13,7 +13,7 @@ pub fn init_db(conn: &Connection) -> Result<()> {
         r#"
         CREATE TABLE IF NOT EXISTS subjects (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL UNIQUE
+            name TEXT NOT NULL UNIQUE COLLATE NOCASE
         );
 
         CREATE TABLE IF NOT EXISTS files (
@@ -350,5 +350,22 @@ impl Storage {
         }
 
         Ok(tasks)
+    }
+    pub fn get_files_by_subject_id(&self, subject_id: i64) -> Result<Vec<String>, StorageError> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT name FROM files WHERE subject_id = ?1 ORDER BY name ASC")
+            .map_err(StorageError::DbError)?;
+
+        let files_iter = stmt
+            .query_map([subject_id], |row| row.get(0))
+            .map_err(StorageError::DbError)?;
+
+        let mut files = Vec::new();
+        for file in files_iter {
+            files.push(file.map_err(StorageError::DbError)?);
+        }
+
+        Ok(files)
     }
 }

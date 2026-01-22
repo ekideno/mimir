@@ -27,6 +27,8 @@ pub enum Commands {
     Open(super::commands::open::OpenArgs),
     Show(super::commands::show::ShowArgs),
 
+    Files(super::commands::files::FilesArgs),
+
     #[command(hide = true)]
     __Complete {
         scope: String,

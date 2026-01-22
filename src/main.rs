@@ -11,7 +11,7 @@ use colored::*;
 use commands::file;
 use context::AppContext;
 
-use crate::commands::{complete, open, show, subject, task};
+use crate::commands::{complete, files, open, show, subject, task};
 
 fn main() {
     if let Err(e) = run() {
@@ -42,6 +42,7 @@ fn run() -> anyhow::Result<()> {
             Commands::File(cmd) => file::handle(&ctx, &cmd)?,
             Commands::Subject(cmd) => subject::handle(&ctx, &cmd)?,
             Commands::Task(cmd) => task::handle(&ctx, &cmd)?,
+            Commands::Files(args) => files::handle(&ctx, &args)?,
         }
     }
 
