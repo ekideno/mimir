@@ -18,6 +18,9 @@ pub enum StorageError {
     #[error("task `{0}` not found")]
     TaskNotFound(String),
 
+    #[error("file `{0}` already exists")]
+    FileAlreadyExists(String, #[source] RusqliteError),
+
     #[error("subject `{0}` already exists in workspace")]
     SubjectAlreadyExists(String),
 

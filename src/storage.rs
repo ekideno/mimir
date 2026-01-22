@@ -16,11 +16,13 @@ pub fn init_db(conn: &Connection) -> Result<()> {
             name TEXT NOT NULL UNIQUE COLLATE NOCASE
         );
 
+
         CREATE TABLE IF NOT EXISTS files (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             subject_id INTEGER NOT NULL,
             name TEXT NOT NULL,
-            FOREIGN KEY(subject_id) REFERENCES subjects(id) ON DELETE CASCADE
+            FOREIGN KEY(subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+            UNIQUE(subject_id, name)
         );
 
         CREATE TABLE IF NOT EXISTS tasks (
@@ -41,29 +43,21 @@ impl Storage {
     pub fn new(conn: Connection) -> Self {
         Self { conn }
     }
-    pub fn add_file(&self, subject_name: &str, file_name: &str) -> Result<(), StorageError> {
-        let subject_id: i64 = self
-            .conn
-            .query_row(
-                "SELECT id FROM subjects WHERE name = ?1",
-                [subject_name],
-                |row| row.get(0),
-            )
-            .map_err(|e| match e {
-                rusqlite::Error::QueryReturnedNoRows => {
-                    StorageError::SubjectNotFound(subject_name.to_string())
+    pub fn add_file(&self, subject_id: i64, file_name: &str) -> Result<(), StorageError> {
+        match self.conn.execute(
+            "INSERT INTO files (subject_id, name) VALUES (?1, ?2)",
+            params![subject_id, file_name],
+        ) {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                if let rusqlite::Error::SqliteFailure(ref err, _) = e {
+                    if err.code == rusqlite::ErrorCode::ConstraintViolation {
+                        return Err(StorageError::FileAlreadyExists(file_name.to_string(), e));
+                    }
                 }
-                other => StorageError::DbError(other),
-            })?;
-
-        self.conn
-            .execute(
-                "INSERT INTO files (subject_id, name) VALUES (?1, ?2)",
-                params![subject_id, file_name],
-            )
-            .map_err(|e| StorageError::FileInsertError(file_name.to_string(), e))?;
-
-        Ok(())
+                Err(StorageError::FileInsertError(file_name.to_string(), e))
+            }
+        }
     }
 
     pub fn add_task(&self, subject_name: &str, task_title: &str) -> Result<(), StorageError> {

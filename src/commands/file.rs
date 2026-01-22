@@ -73,26 +73,32 @@ pub fn rename_file(ctx: &AppContext, file_name: &str, new_file_name: &str) -> Re
 
     Ok(())
 }
+
 pub fn add_file(ctx: &AppContext, subject_name: &str, file_path: &str) -> Result<()> {
     let src = Path::new(file_path);
     if !src.exists() {
         return Err(anyhow!("Source file '{}' does not exist", file_path));
     }
 
+    let subject_id = ctx
+        .storage
+        .get_subject_id_by_name_ci(subject_name)
+        .map_err(|_| anyhow!("Subject '{}' not found", subject_name))?;
+
     let file_name = src
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
         .unwrap_or_else(|| "unknown".to_string());
 
+    ctx.storage.add_file(subject_id, &file_name)?;
+
     let dst = Path::new(&ctx.config.subjects_path)
         .join(subject_name)
-        .join(
-            src.file_name()
-                .unwrap_or_else(|| std::ffi::OsStr::new("unknown")),
-        );
+        .join(&file_name);
 
-    ctx.storage.add_file(subject_name, &file_name)?;
-    fs::copy(src, &dst).with_context(|| format!("failed to copy file to {:?}", dst))?;
+    fs::copy(src, &dst).with_context(|| format!("Failed to copy file to {:?}", dst))?;
+
+    println!("Added file '{}' to subject '{}'", file_name, subject_name);
 
     Ok(())
 }
