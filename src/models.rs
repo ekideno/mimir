@@ -3,11 +3,9 @@ pub struct Subject {
     pub files: Vec<String>,
 }
 
-impl Subject {
-    pub fn new(name: String) -> Self {
-        Self {
-            name,
-            files: Vec::new(),
-        }
-    }
+impl Subject {}
+
+pub struct Task {
+    pub title: String, // Название задачи
+    pub done: bool,    // Статус выполнения: true = выполнено, false = нет
 }

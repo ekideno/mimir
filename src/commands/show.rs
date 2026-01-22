@@ -1,40 +1,54 @@
 use crate::context::AppContext;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::Args;
+use colored::*;
+
 #[derive(Args)]
 pub struct ShowArgs {
     /// Name of the subject to show, or "subjects" to list all subjects
-    pub name: Option<String>,
+    pub target: Option<String>,
 }
 pub fn handle(ctx: &AppContext, args: &ShowArgs) -> Result<()> {
-    match &args.name {
+    match &args.target {
         None => {
-            let subjects = ctx.storage.get_all_subjects_with_files()?;
-
-            println!("Subjects and files:");
-            for subject in subjects {
-                println!("- {}:", subject.name);
-                for file in &subject.files {
-                    println!("    {}", file);
-                }
-            }
-        }
-        Some(name) if name == "subjects" => {
             let subjects = ctx.storage.get_all_subjects()?;
-
-            println!("Subjects:");
             for subject in subjects {
-                println!("- {}", subject.name);
+                let (total, done) = ctx.storage.get_task_progress(&subject)?;
+                println!("{} ({}/{})", subject.bold(), done, total);
+
+                let tasks = ctx.storage.get_tasks_by_subject(&subject)?;
+                let count = tasks.len();
+                for (i, task) in tasks.into_iter().enumerate() {
+                    let status = if task.done {
+                        "[x]".green()
+                    } else {
+                        "[ ]".red()
+                    };
+                    let prefix = if i + 1 == count { "└─" } else { "├─" };
+                    println!("{} {} {}", prefix, status, task.title);
+                }
+                println!();
             }
         }
         Some(subject_name) => {
-            let subject = ctx
-                .storage
-                .get_subject(subject_name)
-                .context("Failed to read subject data")?;
-            println!("Files in '{}':", subject.name);
-            for file in &subject.files {
-                println!("- {}", file);
+            let (total, done) = ctx.storage.get_task_progress(subject_name)?;
+            println!("{} ({}/{})", subject_name.bold(), done, total);
+
+            let tasks = ctx.storage.get_tasks_by_subject(subject_name)?;
+            let count = tasks.len();
+
+            for (i, task) in tasks.into_iter().enumerate() {
+                let status = if task.done {
+                    "[x]".green()
+                } else {
+                    "[ ]".red()
+                };
+                let prefix = if i + 1 == count {
+                    "└──"
+                } else {
+                    "├──"
+                };
+                println!("{} {} {}", prefix, status, task.title);
             }
         }
     }

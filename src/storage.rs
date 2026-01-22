@@ -1,6 +1,6 @@
-use crate::errors::StorageError;
 use crate::models::Subject;
-use anyhow::{Context, Error, Result};
+use crate::{errors::StorageError, models::Task};
+use anyhow::{Context, Result};
 use rusqlite::{Connection, params};
 
 pub struct Storage {
@@ -300,40 +300,55 @@ impl Storage {
         Ok(result)
     }
 
-    pub fn get_subject(&self, subject_name: &str) -> Result<Subject> {
-        let id: i64 = self
+    pub fn get_all_subjects(&self) -> Result<Vec<String>, StorageError> {
+        let mut stmt = self
             .conn
-            .query_row(
-                "SELECT id FROM subjects WHERE name = ?1",
-                [subject_name],
-                |row| Ok(row.get(0)?),
-            )
-            .context(format!("Subject '{}' not found", subject_name))?;
+            .prepare("SELECT name FROM subjects ORDER BY name ASC")
+            .map_err(StorageError::DbError)?;
 
-        let mut files_stmt = self
-            .conn
-            .prepare("SELECT name FROM files WHERE subject_id = ?1")?;
-        let files_iter = files_stmt.query_map([id], |row| row.get::<_, String>(0))?;
-
-        let mut files = Vec::new();
-        for f in files_iter {
-            files.push(f.context("Failed to get file name")?);
-        }
-
-        Ok(Subject {
-            name: subject_name.to_string(),
-            files,
-        })
-    }
-    pub fn get_all_subjects(&self) -> Result<Vec<Subject>, Error> {
-        let mut stmt = self.conn.prepare("SELECT name FROM subjects")?;
-        let rows = stmt.query_map([], |row| Ok(Subject::new(row.get(0)?)))?;
+        let mut rows = stmt.query([]).map_err(StorageError::DbError)?;
 
         let mut subjects = Vec::new();
-        for subj in rows {
-            subjects.push(subj?);
+        while let Some(row) = rows.next().map_err(StorageError::DbError)? {
+            let name: String = row.get(0).map_err(StorageError::DbError)?;
+            subjects.push(name);
         }
 
         Ok(subjects)
+    }
+
+    pub fn get_task_progress(&self, subject_name: &str) -> Result<(usize, usize), StorageError> {
+        let subject_id = self.get_subject_id_by_name(subject_name)?;
+
+        let (total, completed): (i64, i64) = self
+            .conn
+            .query_row(
+                "SELECT COUNT(*), COALESCE(SUM(done), 0) FROM tasks WHERE subject_id = ?1",
+                [subject_id],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .map_err(StorageError::DbError)?;
+
+        Ok((total as usize, completed as usize))
+    }
+    pub fn get_tasks_by_subject(&self, subject_name: &str) -> Result<Vec<Task>, StorageError> {
+        let subject_id = self.get_subject_id_by_name(subject_name)?;
+
+        let mut stmt = self
+            .conn
+            .prepare("SELECT title, done FROM tasks WHERE subject_id = ?1 ORDER BY rowid ASC")
+            .map_err(StorageError::DbError)?;
+
+        let mut rows = stmt.query([subject_id]).map_err(StorageError::DbError)?;
+        let mut tasks = Vec::new();
+
+        while let Some(row) = rows.next().map_err(StorageError::DbError)? {
+            tasks.push(Task {
+                title: row.get(0).map_err(StorageError::DbError)?,
+                done: row.get::<_, i64>(1).map_err(StorageError::DbError)? != 0,
+            });
+        }
+
+        Ok(tasks)
     }
 }
