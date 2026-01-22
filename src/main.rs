@@ -6,13 +6,13 @@ mod errors;
 mod models;
 mod storage;
 mod utils;
+use crate::commands::config as cmd_config;
 use clap::{CommandFactory, Parser};
 use cli::{Cli, Commands};
 use colored::*;
-use commands::file;
 use context::AppContext;
 
-use crate::commands::{complete, files, open, show, subject, task, workspace};
+use crate::commands::{complete, file, files, open, show, subject, task, workspace};
 
 fn main() {
     if let Err(e) = run() {
@@ -45,6 +45,7 @@ fn run() -> anyhow::Result<()> {
             Commands::Task(cmd) => task::handle(&ctx, &cmd)?,
             Commands::Files(args) => files::handle(&ctx, &args)?,
             Commands::Workspace => workspace::handle(&ctx)?,
+            Commands::Config => cmd_config::handle(&ctx)?,
         }
     }
 

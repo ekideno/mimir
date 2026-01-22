@@ -29,6 +29,7 @@ pub enum Commands {
 
     Files(super::commands::files::FilesArgs),
     Workspace,
+    Config,
 
     #[command(hide = true)]
     __Complete {
