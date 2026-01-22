@@ -28,6 +28,7 @@ pub enum Commands {
     Show(super::commands::show::ShowArgs),
 
     Files(super::commands::files::FilesArgs),
+    Workspace,
 
     #[command(hide = true)]
     __Complete {
