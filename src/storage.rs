@@ -385,4 +385,18 @@ impl Storage {
 
         Ok(())
     }
+    pub fn get_subject_name_by_name_ci(&self, name: &str) -> Result<String, StorageError> {
+        self.conn
+            .query_row(
+                "SELECT name FROM subjects WHERE name = ?1 COLLATE NOCASE",
+                [name],
+                |row| row.get(0),
+            )
+            .map_err(|e| match e {
+                rusqlite::Error::QueryReturnedNoRows => {
+                    StorageError::SubjectNotFound(name.to_string())
+                }
+                other => StorageError::DbError(other),
+            })
+    }
 }

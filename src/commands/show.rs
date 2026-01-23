@@ -31,8 +31,10 @@ pub fn handle(ctx: &AppContext, args: &ShowArgs) -> Result<()> {
             }
         }
         Some(subject_name) => {
+            let correct_subject_name = ctx.storage.get_subject_name_by_name_ci(subject_name)?;
             let (total, done) = ctx.storage.get_task_progress(subject_name)?;
-            println!("{} ({}/{})", subject_name.bold(), done, total);
+
+            println!("{} ({}/{})", correct_subject_name.bold(), done, total);
 
             let tasks = ctx.storage.get_tasks_by_subject(subject_name)?;
             let count = tasks.len();
