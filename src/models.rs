@@ -3,8 +3,6 @@ pub struct Subject {
     pub files: Vec<String>,
 }
 
-impl Subject {}
-
 pub struct Task {
     pub title: String,
     pub done: bool,

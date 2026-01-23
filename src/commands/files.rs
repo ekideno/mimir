@@ -13,16 +13,16 @@ pub fn handle(ctx: &AppContext, args: &FilesArgs) -> Result<()> {
         let subject_id = ctx
             .storage
             .get_subject_id_by_name(subject_name_input)
-            .map_err(|_| anyhow!("Subject '{}' not found", subject_name_input))?;
+            .map_err(|_| anyhow!("subject '{}' not found", subject_name_input))?;
 
         let subject_name = ctx.storage.get_subject_name_by_id(subject_id)?;
         let files = ctx
             .storage
             .get_files_by_subject_id(subject_id)
-            .map_err(|_| anyhow!("Failed to get files for '{}'", subject_name))?;
+            .map_err(|_| anyhow!("failed to get files for '{}'", subject_name))?;
 
         if files.is_empty() {
-            println!("No files for subject '{}'", subject_name);
+            println!("no files for subject '{}'", subject_name);
             return Ok(());
         }
 
@@ -39,7 +39,7 @@ pub fn handle(ctx: &AppContext, args: &FilesArgs) -> Result<()> {
         let subjects = ctx
             .storage
             .get_all_subjects()
-            .map_err(|_| anyhow!("Failed to get subjects"))?;
+            .map_err(|_| anyhow!("failed to get subjects"))?;
 
         for subject_name in subjects {
             let subject_id = match ctx.storage.get_subject_id_by_name(&subject_name) {

@@ -18,7 +18,7 @@ pub fn handle(ctx: &AppContext, args: &OpenArgs) -> Result<()> {
         let file_path = subjects_root.join(&subject_name).join(&args.target);
 
         if !file_path.is_file() {
-            return Err(anyhow!("File {:?} not found on disk", file_path));
+            return Err(anyhow!("file {:?} not found on disk", file_path));
         }
 
         println!("{} file: {}", "opening".green().bold(), file_path.display());
@@ -32,7 +32,7 @@ pub fn handle(ctx: &AppContext, args: &OpenArgs) -> Result<()> {
 
         if !subject_path.is_dir() {
             return Err(anyhow!(
-                "Subject folder {:?} not found on disk",
+                "subject folder {:?} not found on disk",
                 subject_path
             ));
         }
@@ -46,5 +46,5 @@ pub fn handle(ctx: &AppContext, args: &OpenArgs) -> Result<()> {
         return Ok(());
     }
 
-    Err(anyhow!("File or subject '{}' not found", args.target))
+    Err(anyhow!("file or subject '{}' not found", args.target))
 }

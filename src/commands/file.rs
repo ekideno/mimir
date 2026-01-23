@@ -1,6 +1,7 @@
 use crate::context::AppContext;
 use anyhow::{Context, Result, anyhow};
 use clap::Subcommand;
+use colored::Colorize;
 use std::fs;
 use std::path::Path;
 
@@ -40,7 +41,14 @@ pub fn delete_file(ctx: &AppContext, file_name: &str) -> Result<()> {
     ctx.storage.delete_file(file_name)?;
 
     fs::remove_file(&file_path)
-        .map_err(|e| anyhow!("Failed to delete file {:?}: {}", file_path, e))?;
+        .map_err(|e| anyhow!("failed to delete file {:?}: {}", file_path, e))?;
+
+    println!(
+        "{} file '{}' from subject '{}'",
+        "deleted".bold().red(),
+        file_name,
+        subject_name
+    );
 
     Ok(())
 }
@@ -57,12 +65,12 @@ pub fn rename_file(ctx: &AppContext, file_name: &str, new_file_name: &str) -> Re
         .join(new_file_name);
 
     if new_path.exists() {
-        return Err(anyhow!("File '{}' already exists", new_file_name));
+        return Err(anyhow!("file '{}' already exists", new_file_name));
     }
 
     fs::rename(&old_path, &new_path).map_err(|e| {
         anyhow!(
-            "Failed to rename file {:?} to {:?}: {}",
+            "failed to rename file {:?} to {:?}: {}",
             old_path,
             new_path,
             e
@@ -70,6 +78,12 @@ pub fn rename_file(ctx: &AppContext, file_name: &str, new_file_name: &str) -> Re
     })?;
 
     ctx.storage.rename_file(file_name, new_file_name)?;
+    println!(
+        "{} file '{}' to '{}'",
+        "renamed".bold().blue(),
+        file_name,
+        new_file_name
+    );
 
     Ok(())
 }
@@ -77,13 +91,13 @@ pub fn rename_file(ctx: &AppContext, file_name: &str, new_file_name: &str) -> Re
 pub fn add_file(ctx: &AppContext, subject_name: &str, file_path: &str) -> Result<()> {
     let src = Path::new(file_path);
     if !src.exists() {
-        return Err(anyhow!("Source file '{}' does not exist", file_path));
+        return Err(anyhow!("source file '{}' does not exist", file_path));
     }
 
     let subject_id = ctx
         .storage
         .get_subject_id_by_name(subject_name)
-        .map_err(|_| anyhow!("Subject '{}' not found", subject_name))?;
+        .map_err(|_| anyhow!("subject '{}' not found", subject_name))?;
 
     let file_name = src
         .file_name()
@@ -96,9 +110,14 @@ pub fn add_file(ctx: &AppContext, subject_name: &str, file_path: &str) -> Result
         .join(subject_name)
         .join(&file_name);
 
-    fs::copy(src, &dst).with_context(|| format!("Failed to copy file to {:?}", dst))?;
+    fs::copy(src, &dst).with_context(|| format!("failed to copy file to {:?}", dst))?;
 
-    println!("Added file '{}' to subject '{}'", file_name, subject_name);
+    println!(
+        "{} file '{}' to subject '{}'",
+        "added".bold().green(),
+        file_name,
+        subject_name
+    );
 
     Ok(())
 }

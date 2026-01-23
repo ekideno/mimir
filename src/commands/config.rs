@@ -14,7 +14,7 @@ pub fn handle(_ctx: &AppContext) -> Result<()> {
         .join("config");
 
     if !config_path.exists() {
-        return Err(anyhow!("Config file {:?} not found", config_path));
+        return Err(anyhow!("config file {:?} not found", config_path));
     }
 
     println!(

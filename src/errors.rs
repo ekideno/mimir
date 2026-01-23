@@ -2,27 +2,27 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum StorageError {
-    #[error("Database error: {0}")]
+    #[error("database error: {0}")]
     DbError(#[from] rusqlite::Error),
 
-    #[error("Subject '{0}' not found")]
+    #[error("subject '{0}' not found")]
     SubjectNotFound(String),
 
-    #[error("Subject '{0}' already exists")]
+    #[error("subject '{0}' already exists")]
     SubjectAlreadyExists(String),
 
-    #[error("Task '{0}' not found")]
+    #[error("task '{0}' not found")]
     TaskNotFound(String),
 
-    #[error("Failed to insert task '{0}': {1}")]
+    #[error("failed to insert task '{0}': {1}")]
     TaskInsertErrorWithDb(String, rusqlite::Error),
 
-    #[error("File '{0}' not found")]
+    #[error("file '{0}' not found")]
     FileNotFound(String),
 
-    #[error("File '{0}' already exists: {1}")]
+    #[error("file '{0}' already exists: {1}")]
     FileAlreadyExists(String, rusqlite::Error),
 
-    #[error("Failed to insert file '{0}': {1}")]
+    #[error("failed to insert file '{0}': {1}")]
     FileInsertError(String, rusqlite::Error),
 }

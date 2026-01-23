@@ -8,7 +8,7 @@ pub fn handle(ctx: &AppContext) -> Result<()> {
     let workspace_path = &ctx.config.subjects_path;
 
     if !workspace_path.is_dir() {
-        return Err(anyhow!("Workspace folder {:?} not found", workspace_path));
+        return Err(anyhow!("workspace folder {:?} not found", workspace_path));
     }
 
     println!(

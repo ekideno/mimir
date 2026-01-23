@@ -2,6 +2,7 @@ use crate::context::AppContext;
 use ::std::path::Path;
 use anyhow::{Context, Result};
 use clap::Subcommand;
+use colored::*;
 use std::fs;
 
 #[derive(Subcommand)]
@@ -54,11 +55,16 @@ fn rename_subject(ctx: &AppContext, subject_name: &str, new_subject_name: &str) 
         let _ = fs::rename(&new_path, &old_path);
         return Err(e.into());
     }
+    println!(
+        "{} subject '{}' to '{}'",
+        "renamed".bold().blue(),
+        subject_name,
+        new_subject_name
+    );
 
     Ok(())
 }
 fn delete_subject(ctx: &AppContext, subject_name: &str) -> Result<()> {
-    println!("Deleting subject: {}", subject_name);
     let subject_dir = Path::new(&ctx.config.subjects_path).join(subject_name);
 
     ctx.storage.delete_subject(subject_name)?;
@@ -66,12 +72,11 @@ fn delete_subject(ctx: &AppContext, subject_name: &str) -> Result<()> {
     if subject_dir.exists() {
         fs::remove_dir_all(&subject_dir).context("failed to delete subject directory")?;
     }
+    println!("{} subject '{}'", "deleted".bold().red(), subject_name);
     Ok(())
 }
 
 fn add_subject(ctx: &AppContext, subject_name: &str) -> Result<()> {
-    println!("Adding subject: {}", subject_name);
-
     let subject_dir = Path::new(&ctx.config.subjects_path).join(subject_name);
 
     if !subject_dir.exists() {
@@ -80,6 +85,6 @@ fn add_subject(ctx: &AppContext, subject_name: &str) -> Result<()> {
 
     ctx.storage.add_subject(subject_name)?;
 
-    println!("✓ Subject '{}' added successfully!", subject_name);
+    println!("{} subject '{}'", "added".bold().green(), subject_name);
     Ok(())
 }

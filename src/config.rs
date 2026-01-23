@@ -19,10 +19,10 @@ impl Config {
 
     pub fn load() -> Result<Self> {
         let config_file =
-            Self::default_config_path().context("Failed to determine config file path")?;
+            Self::default_config_path().context("failed to determine config file path")?;
 
         let content = fs::read_to_string(&config_file)
-            .with_context(|| format!("Failed to read config file: {:?}", config_file))?;
+            .with_context(|| format!("failed to read config file: {:?}", config_file))?;
 
         let mut subjects_path = None;
 
@@ -40,14 +40,14 @@ impl Config {
             }
         }
 
-        let subjects_path = subjects_path.context("Missing 'workspace' in config")?;
+        let subjects_path = subjects_path.context("missing 'workspace' in config")?;
 
         let subjects_path = expand_tilde(&subjects_path)?;
 
         if !subjects_path.exists() {
             std::fs::create_dir_all(&subjects_path).with_context(|| {
                 format!(
-                    "Failed to create subjects_path directory: {:?}",
+                    "failed to create subjects_path directory: {:?}",
                     subjects_path
                 )
             })?;
@@ -82,7 +82,7 @@ impl Config {
 fn expand_tilde(path: &str) -> Result<PathBuf> {
     if path.starts_with("~/") || path == "~" {
         let home =
-            dirs::home_dir().ok_or_else(|| anyhow::anyhow!("Cannot determine HOME directory"))?;
+            dirs::home_dir().ok_or_else(|| anyhow::anyhow!("cannot determine HOME directory"))?;
         Ok(home.join(&path[2..]))
     } else {
         Ok(PathBuf::from(path))
