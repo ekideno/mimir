@@ -26,7 +26,7 @@ pub fn handle(ctx: &AppContext, args: &OpenArgs) -> Result<()> {
         return Ok(());
     }
 
-    if let Ok(subject_id) = ctx.storage.get_subject_id_by_name_ci(&args.target) {
+    if let Ok(subject_id) = ctx.storage.get_subject_id_by_name(&args.target) {
         let subject_name = ctx.storage.get_subject_name_by_id(subject_id)?;
         let subject_path = subjects_root.join(&subject_name);
 

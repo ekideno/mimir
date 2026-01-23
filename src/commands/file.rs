@@ -82,7 +82,7 @@ pub fn add_file(ctx: &AppContext, subject_name: &str, file_path: &str) -> Result
 
     let subject_id = ctx
         .storage
-        .get_subject_id_by_name_ci(subject_name)
+        .get_subject_id_by_name(subject_name)
         .map_err(|_| anyhow!("Subject '{}' not found", subject_name))?;
 
     let file_name = src

@@ -61,7 +61,7 @@ pub fn handle_task_done(
     task_title: &str,
     done: bool,
 ) -> Result<()> {
-    let subject_id = ctx.storage.get_subject_id_by_name_ci(subject_name)?;
+    let subject_id = ctx.storage.get_subject_id_by_name(subject_name)?;
 
     ctx.storage.set_task_done(subject_id, task_title, done)?;
 

@@ -1,8 +1,6 @@
-use crate::{
-    config::Config,
-    storage::{self, Storage},
-};
-use ::anyhow::Result;
+use crate::config::Config;
+use crate::storage::{Storage, init_db};
+use anyhow::Result;
 use rusqlite::Connection;
 
 pub struct AppContext {
@@ -15,7 +13,7 @@ impl AppContext {
         let config = Config::load()?;
 
         let conn = Connection::open(&config.data_path)?;
-        storage::init_db(&conn)?;
+        init_db(&conn)?;
 
         let storage = Storage::new(conn);
 

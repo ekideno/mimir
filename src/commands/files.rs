@@ -12,7 +12,7 @@ pub fn handle(ctx: &AppContext, args: &FilesArgs) -> Result<()> {
     if let Some(subject_name_input) = &args.subject_name {
         let subject_id = ctx
             .storage
-            .get_subject_id_by_name_ci(subject_name_input)
+            .get_subject_id_by_name(subject_name_input)
             .map_err(|_| anyhow!("Subject '{}' not found", subject_name_input))?;
 
         let subject_name = ctx.storage.get_subject_name_by_id(subject_id)?;
@@ -42,7 +42,7 @@ pub fn handle(ctx: &AppContext, args: &FilesArgs) -> Result<()> {
             .map_err(|_| anyhow!("Failed to get subjects"))?;
 
         for subject_name in subjects {
-            let subject_id = match ctx.storage.get_subject_id_by_name_ci(&subject_name) {
+            let subject_id = match ctx.storage.get_subject_id_by_name(&subject_name) {
                 Ok(id) => id,
                 Err(_) => continue,
             };

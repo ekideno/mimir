@@ -6,6 +6,6 @@ pub struct Subject {
 impl Subject {}
 
 pub struct Task {
-    pub title: String, // Название задачи
-    pub done: bool,    // Статус выполнения: true = выполнено, false = нет
+    pub title: String,
+    pub done: bool,
 }
