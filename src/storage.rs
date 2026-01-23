@@ -362,4 +362,27 @@ impl Storage {
 
         Ok(files)
     }
+
+    pub fn set_task_done(
+        &self,
+        subject_id: i64,
+        task_title: &str,
+        done: bool,
+    ) -> Result<(), StorageError> {
+        let affected = self
+            .conn
+            .execute(
+                "UPDATE tasks
+             SET done = ?1
+             WHERE subject_id = ?2 AND title = ?3",
+                rusqlite::params![if done { 1 } else { 0 }, subject_id, task_title],
+            )
+            .map_err(StorageError::DbError)?;
+
+        if affected == 0 {
+            return Err(StorageError::TaskNotFound(task_title.to_string()));
+        }
+
+        Ok(())
+    }
 }

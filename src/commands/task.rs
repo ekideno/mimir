@@ -18,6 +18,14 @@ pub enum TaskCommands {
         old_task_title: String,
         new_task_title: String,
     },
+    Done {
+        subject_name: String,
+        task_title: String,
+    },
+    Undone {
+        subject_name: String,
+        task_title: String,
+    },
 }
 
 pub fn handle(ctx: &AppContext, cmd: &TaskCommands) -> Result<()> {
@@ -35,9 +43,43 @@ pub fn handle(ctx: &AppContext, cmd: &TaskCommands) -> Result<()> {
             old_task_title,
             new_task_title,
         } => rename_task(ctx, subject_name, old_task_title, new_task_title)?,
+        TaskCommands::Done {
+            subject_name,
+            task_title,
+        } => handle_task_done(ctx, subject_name, task_title, true)?,
+        TaskCommands::Undone {
+            subject_name,
+            task_title,
+        } => handle_task_done(ctx, subject_name, task_title, false)?,
     }
     Ok(())
 }
+
+pub fn handle_task_done(
+    ctx: &AppContext,
+    subject_name: &str,
+    task_title: &str,
+    done: bool,
+) -> Result<()> {
+    let subject_id = ctx.storage.get_subject_id_by_name_ci(subject_name)?;
+
+    ctx.storage.set_task_done(subject_id, task_title, done)?;
+
+    let status = if done {
+        "completed"
+    } else {
+        "marked as not done"
+    };
+    println!(
+        "{} task '{}' in '{}'",
+        status.green().bold(),
+        task_title,
+        subject_name
+    );
+
+    Ok(())
+}
+
 fn delete_task(ctx: &AppContext, subject_name: &str, task_title: &str) -> Result<()> {
     let subject_id = ctx.storage.get_subject_id_by_name(subject_name)?;
 
