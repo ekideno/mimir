@@ -3,7 +3,7 @@ pub mod config;
 pub mod file;
 pub mod files;
 pub mod open;
-pub mod show;
 pub mod subject;
 pub mod task;
+pub mod tasks;
 pub mod workspace;

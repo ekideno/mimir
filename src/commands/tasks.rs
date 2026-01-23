@@ -4,11 +4,10 @@ use clap::Args;
 use colored::*;
 
 #[derive(Args)]
-pub struct ShowArgs {
-    /// Name of the subject to show, or "subjects" to list all subjects
+pub struct TasksArgs {
     pub target: Option<String>,
 }
-pub fn handle(ctx: &AppContext, args: &ShowArgs) -> Result<()> {
+pub fn handle(ctx: &AppContext, args: &TasksArgs) -> Result<()> {
     match &args.target {
         None => {
             let subjects = ctx.storage.get_all_subjects()?;

@@ -25,7 +25,7 @@ pub enum Commands {
     Task(super::commands::task::TaskCommands),
 
     Open(super::commands::open::OpenArgs),
-    Show(super::commands::show::ShowArgs),
+    Tasks(super::commands::tasks::TasksArgs),
 
     Files(super::commands::files::FilesArgs),
     Workspace,
