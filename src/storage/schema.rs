@@ -14,9 +14,8 @@ pub fn init_db(conn: &Connection) -> Result<()> {
         CREATE TABLE IF NOT EXISTS files (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             subject_id INTEGER NOT NULL,
-            name TEXT NOT NULL,
-            FOREIGN KEY(subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
-            UNIQUE(subject_id, name)
+            name TEXT NOT NULL UNIQUE,
+            FOREIGN KEY(subject_id) REFERENCES subjects(id) ON DELETE CASCADE
         );
 
         CREATE TABLE IF NOT EXISTS tasks (
