@@ -64,9 +64,7 @@ pub fn rename_file(ctx: &AppContext, file_name: &str, new_file_name: &str) -> Re
         .join(&subject_name)
         .join(new_file_name);
 
-    if new_path.exists() {
-        return Err(anyhow!("file '{}' already exists", new_file_name));
-    }
+    ctx.storage.rename_file(file_name, new_file_name)?;
 
     fs::rename(&old_path, &new_path).map_err(|e| {
         anyhow!(
@@ -77,7 +75,6 @@ pub fn rename_file(ctx: &AppContext, file_name: &str, new_file_name: &str) -> Re
         )
     })?;
 
-    ctx.storage.rename_file(file_name, new_file_name)?;
     println!(
         "{} file '{}' to '{}'",
         "renamed".bold().blue(),
