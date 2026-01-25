@@ -1,4 +1,5 @@
 pub mod complete;
+pub mod completions;
 pub mod config;
 pub mod file;
 pub mod files;

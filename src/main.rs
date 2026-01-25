@@ -6,7 +6,7 @@ mod errors;
 mod models;
 mod storage;
 mod utils;
-use crate::commands::config as cmd_config;
+use crate::commands::{completions, config as cmd_config};
 use clap::{CommandFactory, Parser};
 use cli::{Cli, Commands};
 use colored::*;
@@ -46,6 +46,7 @@ fn run() -> anyhow::Result<()> {
             Commands::Files(args) => files::handle(&ctx, &args)?,
             Commands::Workspace => workspace::handle(&ctx)?,
             Commands::Config => cmd_config::handle(&ctx)?,
+            Commands::Completions { shell } => completions::handle(shell),
         }
     }
 

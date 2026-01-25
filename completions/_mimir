@@ -1,0 +1,40 @@
+#compdef mimir
+
+_mimir() {
+    local -a suggestions
+    local cmd action prefix
+
+    cmd="${words[2]}"
+    action="${words[3]}"
+    prefix="${words[CURRENT]:-}"
+
+    case $CURRENT in
+        2)
+            # Первый уровень: команды/сущности
+            compadd -U subject file task open tasks files workspace config
+            ;;
+        3)
+            # Второй уровень: действия для subject, file, task
+            case "$cmd" in
+                subject|file|task)
+                    compadd -U add delete rename
+                    if [[ "$cmd" == "task" ]]; then
+                        compadd -U done undone
+                    fi
+                    ;;
+                open)
+                    # старый рабочий вариант для open
+                    suggestions=("${(@f)$(mimir complete open -- "$prefix")}")
+                    compadd -U -- "${suggestions[@]}"
+                    ;;
+            esac
+            ;;
+        4)
+            # Третий уровень: динамическое дополнение для file add
+            if [[ "$cmd" == "file" && "$action" == "add" ]]; then
+                suggestions=("${(@f)$(mimir complete file -- "$prefix")}")
+                compadd -U -- "${suggestions[@]}"
+            fi
+            ;;
+    esac
+}

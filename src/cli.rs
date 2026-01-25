@@ -31,6 +31,10 @@ pub enum Commands {
     Workspace,
     Config,
 
+    Completions {
+        #[arg(value_enum)]
+        shell: super::commands::completions::Shell,
+    },
     #[command(hide = true)]
     __Complete {
         scope: String,
